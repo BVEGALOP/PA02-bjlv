@@ -16,14 +16,7 @@
 <div class="contenedor">
     <header class="cabecera">
         <div>
-            <p class="eyebrow">Spring Boot 4.1 · Spring MVC · Inyección de Dependencias</p>
             <h1>Sistema de Pedidos</h1>
-            <p class="subtitulo">
-                El catálogo, precio y stock provienen de inventario-service; H2 conserva los pedidos durante la ejecución.
-            </p>
-        </div>
-        <div class="flujo">
-            DispatcherServlet → Controller → Service → RestClient → inventario-service · Pedido → H2
         </div>
     </header>
 
