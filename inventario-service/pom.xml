@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>pe.edu.isil</groupId>
+    <artifactId>inventario-service</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <jakartaee.version>11.0.0</jakartaee.version>
+        <wildfly.version>41.0.0.Final</wildfly.version>
+        <wildfly.maven.plugin.version>6.0.1.Final</wildfly.maven.plugin.version>
+        <junit.version>5.11.4</junit.version>
+
+        <!-- WildFly: 8080 + 2 = 8082 -->
+        <wildfly.port.offset>2</wildfly.port.offset>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <version>${jakartaee.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Pruebas unitarias -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>inventario-service</finalName>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
+                <version>${wildfly.maven.plugin.version}</version>
+
+                <!--
+                    Configuración utilizada al ejecutar:
+                    mvn clean wildfly:run
+                -->
+                <configuration>
+                    <!-- Configuración externa de SQL Server -->
+                    <propertiesFile>
+                        ${project.basedir}/config/database.properties
+                    </propertiesFile>
+
+                    <!--
+                        Desplaza todos los puertos de WildFly en 2:
+                        HTTP       8080 -> 8082
+                        HTTPS      8443 -> 8445
+                        Management 9990 -> 9992
+                    -->
+                    <javaOpts>
+                        <javaOpt>-Djboss.socket.binding.port-offset=${wildfly.port.offset}</javaOpt>
+                    </javaOpts>
+                </configuration>
+
+                <executions>
+                    <!--
+                        wildfly:run ejecuta previamente la fase package.
+                        En esa fase se provisiona target/server con el add-on
+                        de Microsoft SQL Server y se copia el WAR.
+                    -->
+                    <execution>
+                        <id>provisionar-wildfly-con-sqlserver</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                        <configuration>
+                            <discover-provisioning-info>
+                                <version>${wildfly.version}</version>
+                                <addOns>
+                                    <addOn>mssqlserver</addOn>
+                                </addOns>
+                            </discover-provisioning-info>
+
+                            <overwriteProvisionedServer>true</overwriteProvisionedServer>
+                            <skipDeployment>false</skipDeployment>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

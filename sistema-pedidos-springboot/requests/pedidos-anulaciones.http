@@ -1,0 +1,151 @@
+@baseUrlPedidos = http://localhost:8081/sistema-pedidos
+@baseUrlInventario = http://localhost:8082/inventario-service/api
+
+### =========================================================================
+### CASO 1: ANULACIÓN CORRECTA Y DEVOLUCIÓN DE STOCK
+### =========================================================================
+
+### 1.1 Consultar stock inicial de LAP-001 (ej. stock: 10)
+GET {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### 1.2 Registrar un pedido de 2 unidades de LAP-001 (stock baja a 8)
+POST {{baseUrlPedidos}}/pedidos
+Content-Type: application/x-www-form-urlencoded
+
+cliente=Carlos Benitez&productoCodigo=LAP-001&cantidad=2
+
+### 1.3 Verificar stock tras la reserva (stock: 8)
+GET {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### 1.4 Anular el pedido #1 (solicita devolución remota a inventario)
+POST {{baseUrlPedidos}}/api/v1/anulaciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "pedidoId": 1,
+  "motivo": "Solicitud de cancelación del cliente"
+}
+
+### 1.5 Verificar que el stock se restituyó en Inventario (stock vuelve a 10)
+GET {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### 1.6 Consultar la lista de anulaciones registradas en H2
+GET {{baseUrlPedidos}}/api/v1/anulaciones
+Accept: application/json
+
+### 1.7 Consultar el pedido en H2 (su estado ahora es ANULADO)
+GET {{baseUrlPedidos}}/api/v1/orders
+Accept: application/json
+
+
+### =========================================================================
+### CASO 2: ANULACIÓN DUPLICADA (RECHAZO CON HTTP 409 CONFLICT)
+### =========================================================================
+
+### 2.1 Intentar anular nuevamente el pedido #1 que ya fue anulado
+POST {{baseUrlPedidos}}/api/v1/anulaciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "pedidoId": 1,
+  "motivo": "Intento de anulación repetida"
+}
+
+
+### =========================================================================
+### CASO 3: PEDIDO INEXISTENTE (RECHAZO CON HTTP 404 NOT FOUND)
+### =========================================================================
+
+### 3.1 Intentar anular un pedido con ID inexistente (ej. ID: 999)
+POST {{baseUrlPedidos}}/api/v1/anulaciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "pedidoId": 999,
+  "motivo": "ID que no existe en el sistema"
+}
+
+
+### =========================================================================
+### CASO 4: INVENTARIO INDISPONIBLE (HTTP 503 SERVICE UNAVAILABLE)
+### Nota: Detener temporalmente inventario-service para probar este caso
+### =========================================================================
+
+### 4.1 Registrar un pedido #2 mientras inventario está activo
+POST {{baseUrlPedidos}}/pedidos
+Content-Type: application/x-www-form-urlencoded
+
+cliente=Maria Lopez&productoCodigo=MON-001&cantidad=1
+
+### 4.2 Con inventario-service DETENIDO, intentar anular el pedido #2
+POST {{baseUrlPedidos}}/api/v1/anulaciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "pedidoId": 2,
+  "motivo": "Anulación con servicio de inventario caído"
+}
+
+
+### =========================================================================
+### CASO 5: CONTRATO Y VALIDACIÓN DE LA NUEVA API EN INVENTARIO-SERVICE
+### =========================================================================
+
+### 5.1 Devolución válida (HTTP 200 OK: devuelve codigo, cantidadDevuelta, stockRestante)
+POST {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}
+
+### 5.2 Validación: cantidad menor o igual a cero (HTTP 400 Bad Request)
+POST {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 0
+}
+
+### 5.3 Validación: código inexistente (HTTP 404 Not Found)
+POST {{baseUrlInventario}}/inventario/productos/codigo/COD-NO-EXISTE/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}
+
+
+### =========================================================================
+### RETO AVANZADO (+3 PUNTOS): COMPENSACIÓN ANTE FALLO LOCAL PREVIO AL COMMIT
+### =========================================================================
+
+### R.1 Consultar stock antes de la prueba
+GET {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### R.2 Provocar fallo local controlado enviando cliente "SIMULAR_FALLO_LOCAL"
+### La reserva remota descuenta stock, pero al fallar la persistencia en H2,
+### la aplicación dispara automáticamente la devolución compensatoria.
+POST {{baseUrlPedidos}}/pedidos
+Content-Type: application/x-www-form-urlencoded
+
+cliente=SIMULAR_FALLO_LOCAL&productoCodigo=LAP-001&cantidad=2
+
+### R.3 Verificar que el stock en Inventario fue restituido íntegramente
+GET {{baseUrlInventario}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### R.4 Verificar que en H2 NO existe ningún pedido confirmado de la prueba
+GET {{baseUrlPedidos}}/api/v1/orders
+Accept: application/json

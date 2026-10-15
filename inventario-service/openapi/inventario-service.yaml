@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Inventario Service
+  version: 1.3.0
+  description: API académica responsable del catálogo de productos, precios y stock.
+servers:
+  - url: http://localhost:8082/inventario-service/api
+paths:
+  /inventario/productos:
+    get:
+      summary: Lista el catálogo completo con precio y stock
+      responses:
+        '200':
+          description: Lista obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductoResponse'
+  /inventario/productos/codigo/{codigo}:
+    get:
+      summary: Obtiene un producto por código de negocio
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductoResponse'
+        '404': { description: Producto no encontrado }
+  /inventario/productos/codigo/{codigo}/reservas:
+    post:
+      summary: Reserva stock y devuelve el snapshot comercial del producto
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaStockRequest'
+      responses:
+        '200':
+          description: Stock reservado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaStockResponse'
+        '400': { description: Datos inválidos }
+        '404': { description: Producto no encontrado }
+        '409': { description: Stock insuficiente o conflicto de concurrencia }
+components:
+  schemas:
+    ProductoResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        codigo: { type: string }
+        nombre: { type: string }
+        precio: { type: number, format: double }
+        stock: { type: integer }
+        version: { type: integer, format: int64 }
+    ReservaStockRequest:
+      type: object
+      required: [cantidad]
+      properties:
+        cantidad:
+          type: integer
+          minimum: 1
+    ReservaStockResponse:
+      type: object
+      properties:
+        productoId: { type: integer, format: int64 }
+        codigo: { type: string }
+        nombre: { type: string }
+        precio: { type: number, format: double }
+        cantidadReservada: { type: integer }
+        stockRestante: { type: integer }
+        version: { type: integer, format: int64 }

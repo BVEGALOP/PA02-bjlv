@@ -1,0 +1,71 @@
+@baseUrl = http://localhost:8082/inventario-service/api
+
+### Listar catálogo completo: nombre, precio y stock
+GET {{baseUrl}}/inventario/productos
+Accept: application/json
+
+### Consultar producto por código
+GET {{baseUrl}}/inventario/productos/codigo/LAP-001
+Accept: application/json
+
+### Consultar stock por código
+GET {{baseUrl}}/inventario/productos/codigo/LAP-001/stock
+Accept: application/json
+
+### Reservar por código: devuelve también nombre y precio
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/reservas
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}
+
+### Validación: cantidad inválida
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/reservas
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 0
+}
+
+### Regla de negocio: stock insuficiente
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/reservas
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 9999
+}
+
+### -------------------------------------------------------------
+### CASO 5 / PARTE A: DEVOLUCIONES DE STOCK (NUEVA API PA2)
+### -------------------------------------------------------------
+
+### Devolución válida: incrementa el stock en inventario
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}
+
+### Validación: cantidad inválida (menor o igual a cero -> 400 Bad Request)
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 0
+}
+
+### Validación: código inexistente (-> 404 Not Found)
+POST {{baseUrl}}/inventario/productos/codigo/CODIGO-NO-EXISTE/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}

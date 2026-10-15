@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; max-width: 950px; line-height: 1.45; }
+        code { background: #f3f4f6; padding: 2px 6px; }
+        li { margin: 10px 0; }
+    </style>
+</head>
+<body>
+<h1>Inventario Service</h1>
+<p>API REST académica con Jakarta EE 11, WildFly 41, Java 21 y SQL Server Express 2025.</p>
+<ul>
+    <li><code>GET /api/inventario/productos</code></li>
+    <li><code>GET /api/inventario/productos/{id}/stock</code></li>
+    <li><code>POST /api/inventario/productos/{id}/reservas</code></li>
+    <li><code>GET /api/inventario/productos/codigo/{codigo}/stock</code></li>
+    <li><code>POST /api/inventario/productos/codigo/{codigo}/reservas</code></li>
+</ul>
+<p>Use el archivo <code>requests/inventario-service.http</code> para probar la API.</p>
+</body>
+</html>

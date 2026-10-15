@@ -1,0 +1,14 @@
+@startuml
+skinparam componentStyle rectangle
+
+actor "Sistema de Pedidos\n/Postman" as client
+component "ProductoResource\nJakarta REST" as api
+component "InventarioService\n@Stateless" as service
+component "EntityManager\nJakarta Persistence" as jpa
+database "SQL Server Express 2025\nInventarioDB" as db
+
+client --> api : HTTP + JSON
+api --> service : @EJB
+service --> jpa : @PersistenceContext
+jpa --> db : JDBC / InventarioDS
+@enduml
